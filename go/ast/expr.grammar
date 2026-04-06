@@ -1,0 +1,4 @@
+Binary   : Expr Left, *scanner.Token Op, Expr Right
+Grouping : Expr Expr
+Literal  : *scanner.Token Value
+Unary    : *scanner.Token Op, Expr Right
