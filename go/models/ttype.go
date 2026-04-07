@@ -1,4 +1,6 @@
-package scanner
+package models
+
+import "fmt"
 
 type TokenType int
 
@@ -106,3 +108,20 @@ const (
 	// special
 	EOF
 )
+
+type Token struct {
+	TType  TokenType
+	Lexeme string
+	Lit    any 
+	Line   int
+}
+
+func (t Token) String() string {
+	return fmt.Sprintf("Token { type: %s, lexeme: %s, lit: %T{%v}, line: %d }",
+		t.TType, t.Lexeme, t.Lit, t.Lit, t.Line)
+}
+
+
+func NewToken(ttype TokenType, lexeme string, lit interface{}, line int) *Token {
+	return &Token{TType: ttype, Lexeme: lexeme, Lit: lit, Line: line}
+}

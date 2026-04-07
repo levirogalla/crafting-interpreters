@@ -18,7 +18,7 @@ func (p *ASTPrinter) visitGroupingExpr(expr *Grouping) string {
 
 func (p *ASTPrinter) visitLiteralExpr(expr *Literal) string {
 	if (expr.Value == nil) { return "nil" }
-	return expr.Value.String()
+	return expr.Value.Lexeme
 }
 
 func (p *ASTPrinter) visitUnaryExpr(expr *Unary) string {

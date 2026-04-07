@@ -5,6 +5,8 @@ import (
 	"bufio"
 	"crafting-interpreters/ast"
 	"crafting-interpreters/error"
+	"crafting-interpreters/models"
+	"crafting-interpreters/parser"
 	"crafting-interpreters/scanner"
 	"fmt"
 	"os"
@@ -16,17 +18,17 @@ var hadError = false
 var errReporter = error.NewReporter(false)
 
 func testAST() ast.Expr {
-	expr := ast.Binary{
+	expr := &ast.Binary{
 		Left: ast.Unary{
-			Op: scanner.NewToken(scanner.Minus, "-", nil, 1),
+			Op: models.NewToken(models.Minus, "-", nil, 1),
 			Right: ast.Literal{
-				Value: scanner.NewToken(scanner.Num, "123", 123, 1),
+				Value: models.NewToken(models.Num, "123", 123, 1),
 			},
 		},
-		Op: scanner.NewToken(scanner.Star, "*", nil, 1),
+		Op: models.NewToken(models.Star, "*", nil, 1),
 		Right: ast.Grouping{
 			Expr: ast.Literal{
-				Value: scanner.NewToken(scanner.Num, "45.67", 45.67, 1),
+				Value: models.NewToken(models.Num, "45.67", 45.67, 1),
 			},
 		},
 	}
@@ -49,7 +51,8 @@ func main() {
 	// scanner.Main()
 	// return
 	ASTPrinter := ast.NewASTPringer()
-	fmt.Println(ASTPrinter.Print(testAST()))
+	testTree := testAST()
+	fmt.Println(ASTPrinter.Print(testTree))
 
 	if len(args) > 2 {
 		fmt.Println("usage: glox [script]")
@@ -89,9 +92,16 @@ func runPrompt() {
 }
 
 func run(i string) {
-	s := scanner.NewScanner(i, *errReporter)
-	ts := s.ScanTokens()
-	for _, t := range ts {
-		fmt.Printf("%s\n", t)
-	}
+	scanner := scanner.NewScanner(i, *errReporter)
+	ts := scanner.ScanTokens()
+	parser := parser.NewParser(ts)
+	expr, err := parser.Parse()
+	_ = err
+
+	// for _, t := range *ts {
+	// 	fmt.Printf("%s\n", t)
+	// }
+
+	printer := ast.NewASTPringer()
+	fmt.Println(printer.Print(expr))
 }

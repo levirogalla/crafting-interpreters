@@ -1,4 +1,4 @@
-Binary   : Expr Left, *scanner.Token Op, Expr Right
+Binary   : Expr Left, *models.Token Op, Expr Right
 Grouping : Expr Expr
-Literal  : *scanner.Token Value
-Unary    : *scanner.Token Op, Expr Right
+Literal  : *models.Token Value
+Unary    : *models.Token Op, Expr Right

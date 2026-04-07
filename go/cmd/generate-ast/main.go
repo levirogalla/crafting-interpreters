@@ -46,7 +46,8 @@ func main() {
 package ast
 
 import (
-	"crafting-interpreters/scanner"
+	"crafting-interpreters/models"
+	"fmt"
 )
 
 type Expr interface {
@@ -118,8 +119,9 @@ type Expr interface {
 
 		name := strings.TrimSpace(parts[0])
 		fmt.Fprintf(f, "  case %s: return visitor.visit%s%s(&e)\n", name, name, "Expr")
+		fmt.Fprintf(f, "  case *%s: return visitor.visit%s%s(e)\n", name, name, "Expr")
 	}
-	fmt.Fprint(f, `  default: panic("unreachable")
+	fmt.Fprint(f, `  default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }
 	`)

@@ -2,30 +2,15 @@ package scanner
 
 import (
 	"crafting-interpreters/error"
-	"fmt"
+	"crafting-interpreters/models"
 	"strconv"
 )
 
-type Token struct {
-	ttype  TokenType
-	Lexeme string
-	lit    any 
-	line   int
-}
 
-func (t Token) String() string {
-	return fmt.Sprintf("Token { type: %s, lexeme: %s, lit: %T{%v}, line: %d }",
-		t.ttype, t.Lexeme, t.lit, t.lit, t.line)
-}
-
-
-func NewToken(ttype TokenType, lexeme string, lit interface{}, line int) *Token {
-	return &Token{ttype: ttype, Lexeme: lexeme, lit: lit, line: line}
-}
 
 type Scanner struct {
 	start, current, line int
-	ts                   []Token
+	ts                   []models.Token
 	source               string
 	errReporter          error.Reporter
 }
@@ -35,7 +20,7 @@ func NewScanner(i string, r error.Reporter) *Scanner {
 		start:       0,
 		current:     0,
 		line:        0,
-		ts:          []Token{},
+		ts:          []models.Token{},
 		source:      i,
 		errReporter: r,
 	}
@@ -45,65 +30,65 @@ func (s *Scanner) done() bool {
 	return s.current == len(s.source)
 }
 
-func (s *Scanner) ScanTokens() []Token {
+func (s *Scanner) ScanTokens() *[]models.Token {
 	for !s.done() {
 		s.start = s.current
 		s.scanToken()
 	}
-	s.addSimpleToken(EOF)
-	return s.ts
+	s.addSimpleToken(models.EOF)
+	return &s.ts
 }
 
 func (s *Scanner) scanToken() {
 	c := s.advance()
 	switch c {
 	case '(':
-		s.addSimpleToken(LParen)
+		s.addSimpleToken(models.LParen)
 	case ')':
-		s.addSimpleToken(RParen)
+		s.addSimpleToken(models.RParen)
 	case '{':
-		s.addSimpleToken(LBrace)
+		s.addSimpleToken(models.LBrace)
 	case '}':
-		s.addSimpleToken(RBrace)
+		s.addSimpleToken(models.RBrace)
 	case ',':
-		s.addSimpleToken(Comma)
+		s.addSimpleToken(models.Comma)
 	case '.':
-		s.addSimpleToken(Dot)
+		s.addSimpleToken(models.Dot)
 	case '-':
-		s.addSimpleToken(Minus)
+		s.addSimpleToken(models.Minus)
 	case '+':
-		s.addSimpleToken(Plus)
+		s.addSimpleToken(models.Plus)
 	case ';':
-		s.addSimpleToken(Semicol)
+		s.addSimpleToken(models.Semicol)
 	case '*':
-		s.addSimpleToken(Star)
+		s.addSimpleToken(models.Star)
 
 	case '!':
 		if s.match('=') {
-			s.addSimpleToken(Neq)
+			s.addSimpleToken(models.Neq)
 		} else {
-			s.addSimpleToken(Bang)
+			s.addSimpleToken(models.Bang)
 		}
 
 	case '=':
 		if s.match('=') {
-			s.addSimpleToken(Eq)
+			s.addSimpleToken(models.Eq)
 		} else {
-			s.addSimpleToken(Asign)
+			s.addSimpleToken(models.Asign)
 		}
 
 	case '<':
 		if s.match('=') {
-			s.addSimpleToken(LTE)
+			s.addSimpleToken(models.LTE)
 		} else {
-			s.addSimpleToken(LT)
+			s.addSimpleToken(models.LT)
 		}
 
 	case '>':
 		if s.match('=') {
-			s.addSimpleToken(GTE)
+			s.addSimpleToken(models.GTE)
 		} else {
-			s.addSimpleToken(GT)
+			s.addSimpleToken(models.GT)
 		}
 
 	case '/':
@@ -112,12 +97,10 @@ func (s *Scanner) scanToken() {
 				s.advance()
 			}
 		} else {
-			s.addSimpleToken(Slash)
+			s.addSimpleToken(models.Slash)
 		}
 
-	case ' ':
-	case '\r':
-	case '\t':
+	case ' ', '\r', '\t':
 		break
 
 	case '\n':
@@ -132,7 +115,8 @@ func (s *Scanner) scanToken() {
 		} else if isAlpha(c) {
 			s.handleIdent()
 		} else {
-			s.errReporter.Error(s.line, "unexpected char")
+			m := "unexpected char"
+			s.errReporter.ScanError(s.line, &m)
 		}
 	}
 }
@@ -168,13 +152,13 @@ func (s *Scanner) match(c rune) bool {
 	return true
 }
 
-func (s *Scanner) addSimpleToken(t TokenType) {
+func (s *Scanner) addSimpleToken(t models.TokenType) {
 	s.addToken(t, nil)
 }
 
-func (s *Scanner) addToken(t TokenType, lit interface{}) {
+func (s *Scanner) addToken(t models.TokenType, lit interface{}) {
 	text := s.source[s.start:s.current]
-	s.ts = append(s.ts, *NewToken(t, text, lit, s.line))
+	s.ts = append(s.ts, *models.NewToken(t, text, lit, s.line))
 }
 
 // =================================================================================================
@@ -189,7 +173,7 @@ func (s *Scanner) handleString() {
 	}
 
 	val := s.source[s.start+1 : s.current-1]
-	s.addToken(Str, val)
+	s.addToken(models.Str, val)
 }
 
 func (s *Scanner) handleNumber() {
@@ -206,9 +190,10 @@ func (s *Scanner) handleNumber() {
 
 	val, err := strconv.ParseFloat(s.source[s.start:s.current], 64)
 	if err != nil {
-		s.errReporter.Error(s.line, "unable to parse number")
+		m := "unable to parse number"
+		s.errReporter.ScanError(s.line, &m)
 	}
-	s.addToken(Num, val)
+	s.addToken(models.Num, val)
 }
 
 func (s *Scanner) handleIdent() {
@@ -217,23 +202,23 @@ func (s *Scanner) handleIdent() {
 	}
 	text := s.source[s.start:s.current]
 	switch text {
-	case "and": s.addSimpleToken(And)
-	case "class": s.addSimpleToken(Class)
-	case "else": s.addSimpleToken(Else)
-	case "false": s.addSimpleToken(False)
-	case "for": s.addSimpleToken(For)
-	case "fn": s.addSimpleToken(Fn)
-	case "if": s.addSimpleToken(If)
-	case "nil": s.addSimpleToken(Nil)
-	case "or": s.addSimpleToken(Or)
-	case "return": s.addSimpleToken(Return)
-	case "super": s.addSimpleToken(Super)
-	case "self": s.addSimpleToken(Self)
-	case "true": s.addSimpleToken(True)
-	case "var": s.addSimpleToken(Var)
-	case "while": s.addSimpleToken(While)
+	case "and": s.addSimpleToken(models.And)
+	case "class": s.addSimpleToken(models.Class)
+	case "else": s.addSimpleToken(models.Else)
+	case "false": s.addSimpleToken(models.False)
+	case "for": s.addSimpleToken(models.For)
+	case "fn": s.addSimpleToken(models.Fn)
+	case "if": s.addSimpleToken(models.If)
+	case "nil": s.addSimpleToken(models.Nil)
+	case "or": s.addSimpleToken(models.Or)
+	case "return": s.addSimpleToken(models.Return)
+	case "super": s.addSimpleToken(models.Super)
+	case "self": s.addSimpleToken(models.Self)
+	case "true": s.addSimpleToken(models.True)
+	case "var": s.addSimpleToken(models.Var)
+	case "while": s.addSimpleToken(models.While)
 	default:
-		s.addToken(Ident, text)	
+		s.addToken(models.Ident, text)	
 	}
 }
 

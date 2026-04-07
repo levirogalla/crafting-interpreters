@@ -3,7 +3,8 @@
 package ast
 
 import (
-	"crafting-interpreters/scanner"
+	"crafting-interpreters/models"
+	"fmt"
 )
 
 type Expr interface {
@@ -17,7 +18,7 @@ type Visitor[T any] interface {
 }
 type Binary struct {
   Left Expr
-  Op *scanner.Token
+  Op *models.Token
   Right Expr
 }
 func (Binary) isExpr() {}
@@ -28,12 +29,12 @@ type Grouping struct {
 func (Grouping) isExpr() {}
 
 type Literal struct {
-  Value *scanner.Token
+  Value *models.Token
 }
 func (Literal) isExpr() {}
 
 type Unary struct {
-  Op *scanner.Token
+  Op *models.Token
   Right Expr
 }
 func (Unary) isExpr() {}
@@ -41,10 +42,14 @@ func (Unary) isExpr() {}
 func Accept[T any](expr Expr, visitor Visitor[T]) T {
   switch e := expr.(type) {
   case Binary: return visitor.visitBinaryExpr(&e)
+  case *Binary: return visitor.visitBinaryExpr(e)
   case Grouping: return visitor.visitGroupingExpr(&e)
+  case *Grouping: return visitor.visitGroupingExpr(e)
   case Literal: return visitor.visitLiteralExpr(&e)
+  case *Literal: return visitor.visitLiteralExpr(e)
   case Unary: return visitor.visitUnaryExpr(&e)
-  default: panic("unreachable")
+  case *Unary: return visitor.visitUnaryExpr(e)
+  default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }
 	
