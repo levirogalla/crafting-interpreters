@@ -4,25 +4,25 @@ package ast
 
 type ASTPrinter struct{}
 
-func (p *ASTPrinter) Print(expr Expr) string {
+func (p *ASTPrinter) Print(expr Expr) (string, error) {
 	return Accept(expr, p)
 }
 
-func (p *ASTPrinter) visitBinaryExpr(expr *Binary) string {
-	return p.parenthesize(expr.Op.Lexeme, expr.Left, expr.Right)
+func (p *ASTPrinter) VisitBinaryExpr(expr *Binary) (string, error) {
+	return p.parenthesize(expr.Op.Lexeme, expr.Left, expr.Right), nil
 }
 
-func (p *ASTPrinter) visitGroupingExpr(expr *Grouping) string {
-	return p.parenthesize("group", expr.Expr);
+func (p *ASTPrinter) VisitGroupingExpr(expr *Grouping) (string, error) {
+	return p.parenthesize("group", expr.Expr), nil
 }
 
-func (p *ASTPrinter) visitLiteralExpr(expr *Literal) string {
-	if (expr.Value == nil) { return "nil" }
-	return expr.Value.Lexeme
+func (p *ASTPrinter) VisitLiteralExpr(expr *Literal) (string, error) {
+	if (expr.Value == nil) { return "nil", nil }
+	return expr.Value.Lexeme, nil
 }
 
-func (p *ASTPrinter) visitUnaryExpr(expr *Unary) string {
-	return p.parenthesize(expr.Op.Lexeme, expr.Right);
+func (p *ASTPrinter) VisitUnaryExpr(expr *Unary) (string, error) {
+	return p.parenthesize(expr.Op.Lexeme, expr.Right), nil;
 }
 
 func (p *ASTPrinter) parenthesize(name string, exprs ...Expr) string {
@@ -32,7 +32,8 @@ func (p *ASTPrinter) parenthesize(name string, exprs ...Expr) string {
     builder += "(" + name;
     for _, expr := range exprs {
       builder += " "
-      builder += Accept(expr, p)
+      new, _ := Accept(expr, p)
+      builder += new
     }
     builder += ")"
 

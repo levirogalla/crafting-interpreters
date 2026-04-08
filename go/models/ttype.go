@@ -3,6 +3,7 @@ package models
 import "fmt"
 
 type TokenType int
+type Lnum float64
 
 func (tt TokenType) String() string {
 	names := [...]string{
@@ -122,6 +123,6 @@ func (t Token) String() string {
 }
 
 
-func NewToken(ttype TokenType, lexeme string, lit interface{}, line int) *Token {
+func NewToken(ttype TokenType, lexeme string, lit any, line int) *Token {
 	return &Token{TType: ttype, Lexeme: lexeme, Lit: lit, Line: line}
 }

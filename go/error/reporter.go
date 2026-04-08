@@ -6,7 +6,8 @@ import (
 )
 
 type Reporter struct {
-	hadErr bool
+	HadErr bool
+	HadRuntimeErr bool
 }
 
 func (r *Reporter) ScanError(line int, message *string) {
@@ -24,19 +25,21 @@ func (r *Reporter) ParseError(t *models.Token, message *string) {
 	}
 }
 
+func (r *Reporter) RuntimeError(t *models.Token, message *string) {
+	fmt.Printf(`%s %c[line "%d"]`, *message, '\n', t.Line)
+	r.HadRuntimeErr = true
+}
+
 func (r *Reporter) report(line int, where, message *string) {
 	fmt.Println(
 		"[line ", line, "] error", *where, ": ", *message,
 	)
-	r.hadErr = true
-}
-
-func (r *Reporter) HadError() bool {
-	return r.hadErr
+	r.HadErr = true
 }
 
 func NewReporter(initErr bool) *Reporter {
 	return &Reporter{
-		hadErr: initErr,
+		HadErr: initErr,
+		HadRuntimeErr: initErr,
 	}
 }

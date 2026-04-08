@@ -156,7 +156,7 @@ func (s *Scanner) addSimpleToken(t models.TokenType) {
 	s.addToken(t, nil)
 }
 
-func (s *Scanner) addToken(t models.TokenType, lit interface{}) {
+func (s *Scanner) addToken(t models.TokenType, lit any) {
 	text := s.source[s.start:s.current]
 	s.ts = append(s.ts, *models.NewToken(t, text, lit, s.line))
 }
@@ -170,6 +170,7 @@ func (s *Scanner) handleString() {
 		if s.peek() != '\n' {
 			s.line++
 		}
+		s.advance()
 	}
 
 	val := s.source[s.start+1 : s.current-1]
@@ -193,7 +194,7 @@ func (s *Scanner) handleNumber() {
 		m := "unable to parse number"
 		s.errReporter.ScanError(s.line, &m)
 	}
-	s.addToken(models.Num, val)
+	s.addToken(models.Num, models.Lnum(val))
 }
 
 func (s *Scanner) handleIdent() {

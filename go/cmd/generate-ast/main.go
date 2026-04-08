@@ -69,7 +69,7 @@ type Expr interface {
 
 		name := strings.TrimSpace(parts[0])
 
-		fmt.Fprintf(f, "  visit%s%s(expr *%s) T\n", name, "Expr", name)
+		fmt.Fprintf(f, "  Visit%s%s(expr *%s) (T, error)\n", name, "Expr", name)
 	}
 	fmt.Fprintf(f, "}\n")
 
@@ -110,7 +110,7 @@ type Expr interface {
 		fmt.Fprintln(f)
 	}
 
-	fmt.Fprintf(f, "func Accept[T any](expr %s, visitor Visitor[T]) T {\n  switch e := expr.(type) {\n", "Expr")
+	fmt.Fprintf(f, "func Accept[T any](expr %s, visitor Visitor[T]) (T, error) {\n  switch e := expr.(type) {\n", "Expr")
 	for i, l := range lines {
 		parts := strings.Split(l, ":")
 		if len(parts) != 2 {
@@ -118,8 +118,8 @@ type Expr interface {
 		}
 
 		name := strings.TrimSpace(parts[0])
-		fmt.Fprintf(f, "  case %s: return visitor.visit%s%s(&e)\n", name, name, "Expr")
-		fmt.Fprintf(f, "  case *%s: return visitor.visit%s%s(e)\n", name, name, "Expr")
+		fmt.Fprintf(f, "  case %s: return visitor.Visit%s%s(&e)\n", name, name, "Expr")
+		fmt.Fprintf(f, "  case *%s: return visitor.Visit%s%s(e)\n", name, name, "Expr")
 	}
 	fmt.Fprint(f, `  default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }

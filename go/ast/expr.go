@@ -11,10 +11,10 @@ type Expr interface {
 	isExpr()
 }	
 type Visitor[T any] interface {
-  visitBinaryExpr(expr *Binary) T
-  visitGroupingExpr(expr *Grouping) T
-  visitLiteralExpr(expr *Literal) T
-  visitUnaryExpr(expr *Unary) T
+  VisitBinaryExpr(expr *Binary) (T, error)
+  VisitGroupingExpr(expr *Grouping) (T, error)
+  VisitLiteralExpr(expr *Literal) (T, error)
+  VisitUnaryExpr(expr *Unary) (T, error)
 }
 type Binary struct {
   Left Expr
@@ -39,16 +39,16 @@ type Unary struct {
 }
 func (Unary) isExpr() {}
 
-func Accept[T any](expr Expr, visitor Visitor[T]) T {
+func Accept[T any](expr Expr, visitor Visitor[T]) (T, error) {
   switch e := expr.(type) {
-  case Binary: return visitor.visitBinaryExpr(&e)
-  case *Binary: return visitor.visitBinaryExpr(e)
-  case Grouping: return visitor.visitGroupingExpr(&e)
-  case *Grouping: return visitor.visitGroupingExpr(e)
-  case Literal: return visitor.visitLiteralExpr(&e)
-  case *Literal: return visitor.visitLiteralExpr(e)
-  case Unary: return visitor.visitUnaryExpr(&e)
-  case *Unary: return visitor.visitUnaryExpr(e)
+  case Binary: return visitor.VisitBinaryExpr(&e)
+  case *Binary: return visitor.VisitBinaryExpr(e)
+  case Grouping: return visitor.VisitGroupingExpr(&e)
+  case *Grouping: return visitor.VisitGroupingExpr(e)
+  case Literal: return visitor.VisitLiteralExpr(&e)
+  case *Literal: return visitor.VisitLiteralExpr(e)
+  case Unary: return visitor.VisitUnaryExpr(&e)
+  case *Unary: return visitor.VisitUnaryExpr(e)
   default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }

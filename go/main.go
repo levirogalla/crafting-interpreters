@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"crafting-interpreters/ast"
 	"crafting-interpreters/error"
+	"crafting-interpreters/interpreter"
 	"crafting-interpreters/models"
 	"crafting-interpreters/parser"
 	"crafting-interpreters/scanner"
@@ -14,7 +15,6 @@ import (
 
 const testInputFile = "/Users/levirogalla/Projects/lib/crafting-interpreters/main.lox"
 
-var hadError = false
 var errReporter = error.NewReporter(false)
 
 func testAST() ast.Expr {
@@ -62,9 +62,6 @@ func main() {
 		} else {
 			runFile(args[1])
 		}
-		if hadError {
-			os.Exit(65)
-		}
 	} else {
 		runPrompt()
 	}
@@ -76,7 +73,8 @@ func runFile(fp string) {
 		fmt.Println(err)
 	}
 	run(string(bs))
-	hadError = false
+	if errReporter.HadErr { os.Exit(65) }
+	if errReporter.HadRuntimeErr { os.Exit(70) }
 }
 
 func runPrompt() {
@@ -86,22 +84,21 @@ func runPrompt() {
 		line := scanner.Text()
 		if line != "" {
 			run(line)
+			errReporter.HadErr = false
+			errReporter.HadRuntimeErr = false
 		}
 		fmt.Print("> ")
 	}
 }
 
+var interp = interpreter.NewInterp(*errReporter)
 func run(i string) {
 	scanner := scanner.NewScanner(i, *errReporter)
 	ts := scanner.ScanTokens()
 	parser := parser.NewParser(ts)
 	expr, err := parser.Parse()
 	_ = err
-
-	// for _, t := range *ts {
-	// 	fmt.Printf("%s\n", t)
-	// }
-
 	printer := ast.NewASTPringer()
 	fmt.Println(printer.Print(expr))
+	interp.Interpret(expr)
 }
