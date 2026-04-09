@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 )
 
 type Interp struct{
@@ -19,7 +20,8 @@ func (i *Interp) Interpret(expr ast.Expr) {
 		t :=(err.(*RuntimeError).token)
 		m :=(err.(*RuntimeError).message)
 		i.errReporter.RuntimeError(&t, &m)
-	}
+		return
+	} 
 	fmt.Println(stringify(value))
 }
 
@@ -53,9 +55,9 @@ func (i *Interp) VisitBinaryExpr(expr *ast.Binary) (any, error) {
 			default:
 				return nil, invalidOperandError(expr.Op, r, zNum)
 			}
-		case string:
+		case m.Lstring:
 			switch r := right.(type) {
-			case string:
+			case m.Lstring:
 				return l + r, nil
 			default:
 				return nil, invalidOperandError(expr.Op, r, zStr)
@@ -135,9 +137,9 @@ func isEq(l any, r any) bool {
 	}
 
 	switch l_ := l.(type) {
-	case string, m.Lnum: 
+	case m.Lstring, m.Lnum: 
 		switch r_ := r.(type) {
-		case string, m.Lnum:
+		case m.Lstring, m.Lnum:
 			return l_ == r_
 		}
 		return false
@@ -186,9 +188,13 @@ func (r RuntimeError) Error() string {
 }
 
 func invalidOperandError(op *m.Token, found any, exp ...any) *RuntimeError {
+	var expectedTypes []string
+	for _, e := range exp {
+		expectedTypes = append(expectedTypes, fmt.Sprintf("%T", e))
+	}
 	return  &RuntimeError{
 			token: *op,
-			message: fmt.Sprintf("operand must be a %T, found a %T", exp, found),
+			message: fmt.Sprintf("operand(s) must be of type %s, but found a %T", strings.Join(expectedTypes, ","), found),
 		}
 }
 

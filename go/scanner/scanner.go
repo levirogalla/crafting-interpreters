@@ -174,7 +174,7 @@ func (s *Scanner) handleString() {
 	}
 
 	val := s.source[s.start+1 : s.current-1]
-	s.addToken(models.Str, val)
+	s.addToken(models.Str, models.Lstring(val))
 }
 
 func (s *Scanner) handleNumber() {
@@ -206,16 +206,16 @@ func (s *Scanner) handleIdent() {
 	case "and": s.addSimpleToken(models.And)
 	case "class": s.addSimpleToken(models.Class)
 	case "else": s.addSimpleToken(models.Else)
-	case "false": s.addSimpleToken(models.False)
+	case "false": s.addToken(models.False, models.Lbool(false))
 	case "for": s.addSimpleToken(models.For)
 	case "fn": s.addSimpleToken(models.Fn)
 	case "if": s.addSimpleToken(models.If)
-	case "nil": s.addSimpleToken(models.Nil)
+	case "nil": s.addToken(models.Nil, nil)
 	case "or": s.addSimpleToken(models.Or)
 	case "return": s.addSimpleToken(models.Return)
 	case "super": s.addSimpleToken(models.Super)
 	case "self": s.addSimpleToken(models.Self)
-	case "true": s.addSimpleToken(models.True)
+	case "true": s.addToken(models.True, models.Lbool(true))
 	case "var": s.addSimpleToken(models.Var)
 	case "while": s.addSimpleToken(models.While)
 	default:

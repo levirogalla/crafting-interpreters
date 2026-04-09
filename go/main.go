@@ -50,9 +50,8 @@ func main() {
 	args := os.Args
 	// scanner.Main()
 	// return
-	ASTPrinter := ast.NewASTPringer()
-	testTree := testAST()
-	fmt.Println(ASTPrinter.Print(testTree))
+	// ASTPrinter := ast.NewASTPringer()
+	// testTree := testAST()
 
 	if len(args) > 2 {
 		fmt.Println("usage: glox [script]")
@@ -99,6 +98,7 @@ func run(i string) {
 	expr, err := parser.Parse()
 	_ = err
 	printer := ast.NewASTPringer()
-	fmt.Println(printer.Print(expr))
+	p, _ := printer.Print(expr)
+	fmt.Println(p)
 	interp.Interpret(expr)
 }

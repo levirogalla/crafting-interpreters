@@ -26,7 +26,7 @@ func (r *Reporter) ParseError(t *models.Token, message *string) {
 }
 
 func (r *Reporter) RuntimeError(t *models.Token, message *string) {
-	fmt.Printf(`%s %c[line "%d"]`, *message, '\n', t.Line)
+	fmt.Printf("%s %c[line \"%d\"]\n", *message, '\n', t.Line)
 	r.HadRuntimeErr = true
 }
 
