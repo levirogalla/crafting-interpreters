@@ -17,10 +17,10 @@ func (r *Reporter) ScanError(line int, message *string) {
 
 func (r *Reporter) ParseError(t *models.Token, message *string) {
 	if t.TType == models.EOF {
-		w := " at end"
+		w := "at end"
 		r.report(t.Line, &w, message)
 	} else {
-		w := (" at '" + t.Lexeme + "'")
+		w := ("at '" + t.Lexeme + "'")
 		r.report(t.Line, &w, message)
 	}
 }
@@ -31,8 +31,8 @@ func (r *Reporter) RuntimeError(t *models.Token, message *string) {
 }
 
 func (r *Reporter) report(line int, where, message *string) {
-	fmt.Println(
-		"[line ", line, "] error", *where, ": ", *message,
+	fmt.Printf(
+		"[line %d] error %s: %s\n", line, *where, *message,
 	)
 	r.HadErr = true
 }

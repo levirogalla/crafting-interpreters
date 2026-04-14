@@ -218,6 +218,7 @@ func (s *Scanner) handleIdent() {
 	case "true": s.addToken(models.True, models.Lbool(true))
 	case "var": s.addSimpleToken(models.Var)
 	case "while": s.addSimpleToken(models.While)
+	case "katy": s.addSimpleToken(models.Print)
 	default:
 		s.addToken(models.Ident, text)	
 	}

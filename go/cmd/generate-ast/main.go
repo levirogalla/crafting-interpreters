@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 func main() {
@@ -16,18 +17,22 @@ func main() {
 	// parse args
 
 	var input string
+	var super string
 	var output string
 	switch len(args) {
 	case 2:
 		input = args[1]
+		super = strings.TrimSuffix(filepath.Base(input), ".grammar")
 		output = filepath.Join(outputDir, filepath.Base(input))
 		output = strings.TrimSuffix(output, ".grammar") + ".go"
 	case 4:
 		input = args[1]
+		super = strings.TrimSuffix(filepath.Base(input), ".grammar")
 		output = args[3]
 	default:
 		incorrectUsage()
 	}
+	super = capitalize(super)
 
 	// reset file
 
@@ -40,7 +45,7 @@ func main() {
 	e(err)
 	defer f.Close()
 
-	f.WriteString(
+	fmt.Fprintf(f,
 		`// generate file, do not edit
 
 package ast
@@ -50,17 +55,17 @@ import (
 	"fmt"
 )
 
-type Expr interface {
-	isExpr()
+type %s interface {
+	is%s()
 }	
-`)
+`, super, super)
 	grammar, err := os.ReadFile(input)
 	e(err)
 	lines := strings.Split(string(grammar), "\n")
 
 	// visitor pattern
 
-	fmt.Fprintf(f, "type Visitor[T any] interface {\n")
+	fmt.Fprintf(f, "type %sVisitor[T any] interface {\n", super)
 	for i, l := range lines {
 		parts := strings.Split(l, ":")
 		if len(parts) != 2 {
@@ -69,7 +74,7 @@ type Expr interface {
 
 		name := strings.TrimSpace(parts[0])
 
-		fmt.Fprintf(f, "  Visit%s%s(expr *%s) (T, error)\n", name, "Expr", name)
+		fmt.Fprintf(f, "  Visit%s%s(expr *%s) (T, error)\n", name, super, name)
 	}
 	fmt.Fprintf(f, "}\n")
 
@@ -102,7 +107,7 @@ type Expr interface {
 			fmt.Fprintf(f, "  %s %s\n", varName, typ)
 		}
 
-		fmt.Fprintf(f, "}\nfunc (%s) isExpr() {}\n", name)
+		fmt.Fprintf(f, "}\nfunc (%s) is%s() {}\n", name, super)
 // 		fmt.Fprintf(f, `func (self %s[T]) accept(visitor Visitor[T]) T {
 // 	return visitor.visit%s%s(self)
 // }
@@ -110,7 +115,7 @@ type Expr interface {
 		fmt.Fprintln(f)
 	}
 
-	fmt.Fprintf(f, "func Accept[T any](expr %s, visitor Visitor[T]) (T, error) {\n  switch e := expr.(type) {\n", "Expr")
+	fmt.Fprintf(f, "func Accept%s[T any](expr %s, visitor %sVisitor[T]) (T, error) {\n  switch e := expr.(type) {\n", super, super, super)
 	for i, l := range lines {
 		parts := strings.Split(l, ":")
 		if len(parts) != 2 {
@@ -118,8 +123,8 @@ type Expr interface {
 		}
 
 		name := strings.TrimSpace(parts[0])
-		fmt.Fprintf(f, "  case %s: return visitor.Visit%s%s(&e)\n", name, name, "Expr")
-		fmt.Fprintf(f, "  case *%s: return visitor.Visit%s%s(e)\n", name, name, "Expr")
+		fmt.Fprintf(f, "  case %s: return visitor.Visit%s%s(&e)\n", name, name, super)
+		fmt.Fprintf(f, "  case *%s: return visitor.Visit%s%s(e)\n", name, name, super)
 	}
 	fmt.Fprint(f, `  default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
@@ -142,4 +147,13 @@ func e(err error) {
 func exit(err string) {
 	fmt.Println(err)
 	os.Exit(65)
+}
+
+func capitalize(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

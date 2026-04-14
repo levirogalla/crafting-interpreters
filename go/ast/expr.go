@@ -10,45 +10,45 @@ import (
 type Expr interface {
 	isExpr()
 }	
-type Visitor[T any] interface {
-  VisitBinaryExpr(expr *Binary) (T, error)
-  VisitGroupingExpr(expr *Grouping) (T, error)
-  VisitLiteralExpr(expr *Literal) (T, error)
-  VisitUnaryExpr(expr *Unary) (T, error)
+type ExprVisitor[T any] interface {
+  VisitBinaryNodeExpr(expr *BinaryNode) (T, error)
+  VisitGroupingNodeExpr(expr *GroupingNode) (T, error)
+  VisitLiteralNodeExpr(expr *LiteralNode) (T, error)
+  VisitUnaryNodeExpr(expr *UnaryNode) (T, error)
 }
-type Binary struct {
+type BinaryNode struct {
   Left Expr
   Op *models.Token
   Right Expr
 }
-func (Binary) isExpr() {}
+func (BinaryNode) isExpr() {}
 
-type Grouping struct {
+type GroupingNode struct {
   Expr Expr
 }
-func (Grouping) isExpr() {}
+func (GroupingNode) isExpr() {}
 
-type Literal struct {
+type LiteralNode struct {
   Value *models.Token
 }
-func (Literal) isExpr() {}
+func (LiteralNode) isExpr() {}
 
-type Unary struct {
+type UnaryNode struct {
   Op *models.Token
   Right Expr
 }
-func (Unary) isExpr() {}
+func (UnaryNode) isExpr() {}
 
-func Accept[T any](expr Expr, visitor Visitor[T]) (T, error) {
+func AcceptExpr[T any](expr Expr, visitor ExprVisitor[T]) (T, error) {
   switch e := expr.(type) {
-  case Binary: return visitor.VisitBinaryExpr(&e)
-  case *Binary: return visitor.VisitBinaryExpr(e)
-  case Grouping: return visitor.VisitGroupingExpr(&e)
-  case *Grouping: return visitor.VisitGroupingExpr(e)
-  case Literal: return visitor.VisitLiteralExpr(&e)
-  case *Literal: return visitor.VisitLiteralExpr(e)
-  case Unary: return visitor.VisitUnaryExpr(&e)
-  case *Unary: return visitor.VisitUnaryExpr(e)
+  case BinaryNode: return visitor.VisitBinaryNodeExpr(&e)
+  case *BinaryNode: return visitor.VisitBinaryNodeExpr(e)
+  case GroupingNode: return visitor.VisitGroupingNodeExpr(&e)
+  case *GroupingNode: return visitor.VisitGroupingNodeExpr(e)
+  case LiteralNode: return visitor.VisitLiteralNodeExpr(&e)
+  case *LiteralNode: return visitor.VisitLiteralNodeExpr(e)
+  case UnaryNode: return visitor.VisitUnaryNodeExpr(&e)
+  case *UnaryNode: return visitor.VisitUnaryNodeExpr(e)
   default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }

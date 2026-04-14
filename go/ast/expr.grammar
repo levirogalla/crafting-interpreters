@@ -1,4 +1,4 @@
-Binary   : Expr Left, *models.Token Op, Expr Right
-Grouping : Expr Expr
-Literal  : *models.Token Value
-Unary    : *models.Token Op, Expr Right
+BinaryNode   : Expr Left, *models.Token Op, Expr Right
+GroupingNode : Expr Expr
+LiteralNode  : *models.Token Value
+UnaryNode    : *models.Token Op, Expr Right

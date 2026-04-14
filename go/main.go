@@ -1,4 +1,5 @@
-//go:generate ./ast/generate-ast ./ast/expr.grammar -o ./ast/expr.go
+//go:generate ./cmd/generate-ast/generate-ast ./ast/expr.grammar -o ./ast/expr.go
+//go:generate ./cmd/generate-ast/generate-ast ./ast/stmt.grammar -o ./ast/stmt.go
 package main
 
 import (
@@ -18,16 +19,16 @@ const testInputFile = "/Users/levirogalla/Projects/lib/crafting-interpreters/mai
 var errReporter = error.NewReporter(false)
 
 func testAST() ast.Expr {
-	expr := &ast.Binary{
-		Left: ast.Unary{
+	expr := &ast.BinaryNode{
+		Left: ast.UnaryNode{
 			Op: models.NewToken(models.Minus, "-", nil, 1),
-			Right: ast.Literal{
+			Right: ast.LiteralNode{
 				Value: models.NewToken(models.Num, "123", 123, 1),
 			},
 		},
 		Op: models.NewToken(models.Star, "*", nil, 1),
-		Right: ast.Grouping{
-			Expr: ast.Literal{
+		Right: ast.GroupingNode{
+			Expr: ast.LiteralNode{
 				Value: models.NewToken(models.Num, "45.67", 45.67, 1),
 			},
 		},
@@ -95,10 +96,7 @@ func run(i string) {
 	scanner := scanner.NewScanner(i, *errReporter)
 	ts := scanner.ScanTokens()
 	parser := parser.NewParser(ts)
-	expr, err := parser.Parse()
+	stmts, err := parser.Parse()
 	_ = err
-	printer := ast.NewASTPringer()
-	p, _ := printer.Print(expr)
-	fmt.Println(p)
-	interp.Interpret(expr)
+	interp.Interpret(stmts)
 }

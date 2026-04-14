@@ -1,20 +1,17 @@
 # Lox Grammar
 
-## Version 1 - No Presidence
+program        → declaration* EOF ;
 
-expression     → literal
-               | unary
-               | binary
-               | grouping ;
+declaration    → varDecl
+               | statement ;
 
-literal        → NUMBER | STRING | "true" | "false" | "nil" ;
-grouping       → "(" expression ")" ;
-unary          → ( "-" | "!" ) expression ;
-binary         → expression operator expression ;
-operator       → "==" | "!=" | "<" | "<=" | ">" | ">="
-               | "+"  | "-"  | "*" | "/" ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
-## Version 2 - Add Presidence
+statement      → exprStmt
+               | printStmt ;
+
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
 
 expression     → equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -23,5 +20,11 @@ term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
                | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
+primary        → literal
+               | grouping ;
+
+literal        → NUMBER | STRING | "true" | "false" | "nil" ;
+grouping       → "(" expression ")" ;
+binary         → expression operator expression ;
+operator       → "==" | "!=" | "<" | "<=" | ">" | ">="
+               | "+"  | "-"  | "*" | "/" ;
