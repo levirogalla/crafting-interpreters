@@ -25,6 +25,10 @@ func (p *ASTPrinter) VisitUnaryNodeExpr(expr *UnaryNode) (string, error) {
 	return p.parenthesize(expr.Op.Lexeme, expr.Right), nil;
 }
 
+func (p *ASTPrinter) VisitIdentNodeExpr(expr *IdentNode) (string, error) {
+  return expr.Name.Lexeme, nil
+}
+
 func (p *ASTPrinter) parenthesize(name string, exprs ...Expr) string {
     // StringBuilder builder = new StringBuilder();
 		builder := ""

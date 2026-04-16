@@ -113,7 +113,7 @@ const (
 type Token struct {
 	TType  TokenType
 	Lexeme string
-	Lit    any 
+	Lit    Ltype 
 	Line   int
 }
 
@@ -123,10 +123,20 @@ func (t Token) String() string {
 }
 
 
-func NewToken(ttype TokenType, lexeme string, lit any, line int) *Token {
+func NewToken(ttype TokenType, lexeme string, lit Ltype, line int) *Token {
 	return &Token{TType: ttype, Lexeme: lexeme, Lit: lit, Line: line}
 }
 
 type Lnum float64
+func (Lnum) isLType() {}
+
 type Lstring string
+func (Lstring) isLType() {}
+
 type Lbool bool
+func (Lbool) isLType() {}
+
+
+type Ltype interface {
+	isLType()
+}

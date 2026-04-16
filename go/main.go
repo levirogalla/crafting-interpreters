@@ -4,10 +4,8 @@ package main
 
 import (
 	"bufio"
-	"crafting-interpreters/ast"
 	"crafting-interpreters/error"
 	"crafting-interpreters/interpreter"
-	"crafting-interpreters/models"
 	"crafting-interpreters/parser"
 	"crafting-interpreters/scanner"
 	"fmt"
@@ -17,35 +15,6 @@ import (
 const testInputFile = "/Users/levirogalla/Projects/lib/crafting-interpreters/main.lox"
 
 var errReporter = error.NewReporter(false)
-
-func testAST() ast.Expr {
-	expr := &ast.BinaryNode{
-		Left: ast.UnaryNode{
-			Op: models.NewToken(models.Minus, "-", nil, 1),
-			Right: ast.LiteralNode{
-				Value: models.NewToken(models.Num, "123", 123, 1),
-			},
-		},
-		Op: models.NewToken(models.Star, "*", nil, 1),
-		Right: ast.GroupingNode{
-			Expr: ast.LiteralNode{
-				Value: models.NewToken(models.Num, "45.67", 45.67, 1),
-			},
-		},
-	}
-	return expr
-	//   public static void main(String[] args) {
-	//   Expr expression = new Expr.Binary(
-	//       new Expr.Unary(
-	//           new Token(TokenType.MINUS, "-", null, 1),
-	//           new Expr.Literal(123)),
-	//       new Token(TokenType.STAR, "*", null, 1),
-	//       new Expr.Grouping(
-	//           new Expr.Literal(45.67)));
-
-	//   System.out.println(new AstPrinter().print(expression));
-	// }
-}
 
 func main() {
 	args := os.Args

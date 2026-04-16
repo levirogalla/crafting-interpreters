@@ -43,3 +43,12 @@ func NewReporter(initErr bool) *Reporter {
 		HadRuntimeErr: initErr,
 	}
 }
+
+type RuntimeError struct {
+	Token   models.Token
+	Message string
+}
+
+func (r RuntimeError) Error() string {
+	return fmt.Sprintf("%s: %s", r.Message, r.Token)
+}

@@ -2,7 +2,9 @@ package interpreter
 
 import (
 	"crafting-interpreters/ast"
+	"crafting-interpreters/environ"
 	lerr "crafting-interpreters/error"
+	"crafting-interpreters/models"
 	m "crafting-interpreters/models"
 	"fmt"
 	"reflect"
@@ -12,6 +14,7 @@ import (
 
 type Interp struct {
 	errReporter lerr.Reporter
+	environ *environ.Environ
 }
 
 func (i *Interp) Interpret(stmts []ast.Stmt) {
@@ -25,13 +28,13 @@ func (i *Interp) Interpret(stmts []ast.Stmt) {
 	return
 
 handleError:
-	t := (err.(*RuntimeError).token)
-	m := (err.(*RuntimeError).message)
+	t := (err.(lerr.RuntimeError).Token)
+	m := (err.(lerr.RuntimeError).Message)
 	i.errReporter.RuntimeError(&t, &m)
 }
 
-func (i *Interp) evaluate(expr ast.Expr) (any, error) {
-	return ast.AcceptExpr(expr, i)
+func (i *Interp) evaluate(expr ast.Expr) (models.Ltype, error) {
+	return ast.AcceptExpr[models.Ltype](expr, i)
 }
 
 func (i *Interp) execute(stmt ast.Stmt) error {
@@ -43,30 +46,43 @@ func (i *Interp) execute(stmt ast.Stmt) error {
 // Statement methods
 // =================================================================================================
 
-func (i *Interp) VisitExprStmtNodeStmt(expr *ast.ExprStmtNode) (int, error) {
-	_, err := i.evaluate(expr.Expr)
+func (i *Interp) VisitExprStmtNodeStmt(stmt *ast.ExprStmtNode) (int, error) {
+	_, err := i.evaluate(stmt.Expr)
 	return 0, err
 }
 
-func (i *Interp) VisitPrintNodeStmt(expr *ast.PrintNode) (int, error) {
-	val, err := i.evaluate(expr.Expr)
+func (i *Interp) VisitPrintNodeStmt(stmt *ast.PrintNode) (int, error) {
+	val, err := i.evaluate(stmt.Expr)
 	fmt.Println(stringify(val))
 	return 0, err
 }
 
+func (i *Interp) VisitDeclNodeStmt(stmt *ast.DeclNode) (int, error) {
+	var value models.Ltype
+	var err error
+	if stmt.Initializer != nil {
+		value, err = i.evaluate(stmt.Initializer)
+	}
+	i.environ.Define(stmt.Ident.Name.Lexeme, value)
+	return 0, err
+}
 // =================================================================================================
 // Expression methods
 // =================================================================================================
 
-func (*Interp) VisitLiteralNodeExpr(expr *ast.LiteralNode) (any, error) {
+func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (models.Ltype, error) {
+	return i.environ.Get(*expr.Name)
+}
+
+func (*Interp) VisitLiteralNodeExpr(expr *ast.LiteralNode) (models.Ltype, error) {
 	return expr.Value.Lit, nil
 }
 
-func (i *Interp) VisitGroupingNodeExpr(expr *ast.GroupingNode) (any, error) {
+func (i *Interp) VisitGroupingNodeExpr(expr *ast.GroupingNode) (models.Ltype, error) {
 	return i.evaluate(expr.Expr)
 }
 
-func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (any, error) {
+func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (models.Ltype, error) {
 	var zNum m.Lnum
 	var zStr string
 	left, err := i.evaluate(expr.Left)
@@ -121,25 +137,25 @@ func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return l > r, nil
+		return models.Lbool(l > r), nil
 	case m.GTE:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return l >= r, nil
+		return models.Lbool(l >= r), nil
 	case m.LT:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return l < r, nil
+		return models.Lbool(l < r), nil
 	case m.LTE:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return l <= r, nil
+		return models.Lbool(l <= r), nil
 	case m.Eq:
 		return isEq(left, right), nil
 	case m.Neq:
@@ -149,7 +165,7 @@ func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (any, error) {
 	}
 }
 
-func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (any, error) {
+func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (models.Ltype, error) {
 	right, err := i.evaluate(expr.Right)
 	if err != nil {
 		return nil, err
@@ -168,23 +184,25 @@ func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (any, error) {
 	}
 }
 
+// func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (any, error) {}
+
 // =================================================================================================
 // Utils
 // =================================================================================================
 
-func (i *Interp) isTruthy(expr any) bool {
+func (i *Interp) isTruthy(expr any) models.Lbool {
 	if expr == nil {
-		return false
+		return models.Lbool(false)
 	}
 	switch e := expr.(type) {
 	case bool:
-		return e
+		return models.Lbool(e)
 	default:
-		return true
+		return models.Lbool(true)
 	}
 }
 
-func isEq(l any, r any) bool {
+func isEq(l any, r any) models.Lbool {
 	if l == nil && r == nil {
 		return true
 	} else if l == nil || r == nil {
@@ -201,11 +219,11 @@ func isEq(l any, r any) bool {
 	case []any:
 		switch r_ := r.(type) {
 		case []any:
-			return slices.Equal(l_, r_)
+			return models.Lbool(slices.Equal(l_, r_))
 		}
 		return false
 	default:
-		return reflect.DeepEqual(l, r)
+		return models.Lbool(reflect.DeepEqual(l, r))
 	}
 }
 
@@ -233,23 +251,16 @@ func checkType[T any](op *m.Token, a any) (a_ T, err error) {
 	return a_, nil
 }
 
-type RuntimeError struct {
-	token   m.Token
-	message string
-}
 
-func (r RuntimeError) Error() string {
-	return fmt.Sprintf("%s: %s", r.message, r.token)
-}
 
-func invalidOperandError(op *m.Token, found any, exp ...any) *RuntimeError {
+func invalidOperandError(op *m.Token, found any, exp ...any) *lerr.RuntimeError {
 	var expectedTypes []string
 	for _, e := range exp {
 		expectedTypes = append(expectedTypes, fmt.Sprintf("%T", e))
 	}
-	return &RuntimeError{
-		token:   *op,
-		message: fmt.Sprintf("operand(s) must be of type %s, but found a %T", strings.Join(expectedTypes, ","), found),
+	return &lerr.RuntimeError{
+		Token:   *op,
+		Message: fmt.Sprintf("operand(s) must be of type %s, but found a %T", strings.Join(expectedTypes, ","), found),
 	}
 }
 
@@ -260,5 +271,6 @@ func stringify(v any) string {
 func NewInterp(errReporter lerr.Reporter) *Interp {
 	return &Interp{
 		errReporter: errReporter,
+		environ: environ.NewEnviron(),
 	}
 }

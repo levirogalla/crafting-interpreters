@@ -15,6 +15,7 @@ type ExprVisitor[T any] interface {
   VisitGroupingNodeExpr(expr *GroupingNode) (T, error)
   VisitLiteralNodeExpr(expr *LiteralNode) (T, error)
   VisitUnaryNodeExpr(expr *UnaryNode) (T, error)
+  VisitIdentNodeExpr(expr *IdentNode) (T, error)
 }
 type BinaryNode struct {
   Left Expr
@@ -39,6 +40,11 @@ type UnaryNode struct {
 }
 func (UnaryNode) isExpr() {}
 
+type IdentNode struct {
+  Name *models.Token
+}
+func (IdentNode) isExpr() {}
+
 func AcceptExpr[T any](expr Expr, visitor ExprVisitor[T]) (T, error) {
   switch e := expr.(type) {
   case BinaryNode: return visitor.VisitBinaryNodeExpr(&e)
@@ -49,6 +55,8 @@ func AcceptExpr[T any](expr Expr, visitor ExprVisitor[T]) (T, error) {
   case *LiteralNode: return visitor.VisitLiteralNodeExpr(e)
   case UnaryNode: return visitor.VisitUnaryNodeExpr(&e)
   case *UnaryNode: return visitor.VisitUnaryNodeExpr(e)
+  case IdentNode: return visitor.VisitIdentNodeExpr(&e)
+  case *IdentNode: return visitor.VisitIdentNodeExpr(e)
   default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }

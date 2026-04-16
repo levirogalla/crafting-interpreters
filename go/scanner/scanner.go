@@ -156,7 +156,7 @@ func (s *Scanner) addSimpleToken(t models.TokenType) {
 	s.addToken(t, nil)
 }
 
-func (s *Scanner) addToken(t models.TokenType, lit any) {
+func (s *Scanner) addToken(t models.TokenType, lit models.Ltype) {
 	text := s.source[s.start:s.current]
 	s.ts = append(s.ts, *models.NewToken(t, text, lit, s.line))
 }
@@ -218,9 +218,9 @@ func (s *Scanner) handleIdent() {
 	case "true": s.addToken(models.True, models.Lbool(true))
 	case "var": s.addSimpleToken(models.Var)
 	case "while": s.addSimpleToken(models.While)
-	case "katy": s.addSimpleToken(models.Print)
+	case "print": s.addSimpleToken(models.Print)
 	default:
-		s.addToken(models.Ident, text)	
+		s.addToken(models.Ident, models.Lstring(text))	
 	}
 }
 
