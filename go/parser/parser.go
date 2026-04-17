@@ -73,7 +73,29 @@ func (p *Parser) statement() (ast.Stmt, error) {
 	if p.match(models.Print) { 
 		return p.printStatement()
 	}
+	if p.match(models.LBrace) {
+		stmts, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return	&ast.BlockNode{
+			Stmts: stmts,
+		}, nil
+	}
 	return p.exprStatement()
+}
+
+func (p *Parser) block() ([]ast.Stmt, error) {
+	var stmts []ast.Stmt
+	for !p.check(models.RBrace) && !p.done() {
+		stmt, err := p.declaration()
+		if err != nil {
+			return nil, err
+		}
+		stmts = append(stmts, stmt)
+	}
+	p.consume(models.RBrace, "expected '}' after block.")
+	return stmts, nil
 }
 
 func (p *Parser) printStatement() (ast.Stmt, error) {

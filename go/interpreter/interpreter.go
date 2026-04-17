@@ -41,6 +41,20 @@ func (i *Interp) execute(stmt ast.Stmt) error {
 	return err
 }
 
+func (i *Interp) execBlock(stmts []ast.Stmt, environ *environ.Environ) error {
+	prev := i.environ;
+	defer func() { i.environ = prev }()
+
+	i.environ = environ
+	for _, stmt := range stmts {
+		err := i.execute(stmt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // =================================================================================================
 // Statement methods
 // =================================================================================================
@@ -63,6 +77,11 @@ func (i *Interp) VisitDeclNodeStmt(stmt *ast.DeclNode) (int, error) {
 		value, err = i.evaluate(stmt.Initializer)
 	}
 	i.environ.Define(stmt.Ident.Name.Lexeme, value)
+	return 0, err
+}
+
+func (i *Interp) VisitBlockNodeStmt(stmt *ast.BlockNode) (int, error) {
+	err := i.execBlock(stmt.Stmts, environ.NewEnviron(i.environ));
 	return 0, err
 }
 // =================================================================================================
@@ -284,6 +303,6 @@ func stringify(v any) string {
 func NewInterp(errReporter lerr.Reporter) *Interp {
 	return &Interp{
 		errReporter: errReporter,
-		environ: environ.NewEnviron(),
+		environ: environ.NewEnviron(nil),
 	}
 }

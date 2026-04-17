@@ -13,6 +13,7 @@ type StmtVisitor[T any] interface {
   VisitExprStmtNodeStmt(expr *ExprStmtNode) (T, error)
   VisitPrintNodeStmt(expr *PrintNode) (T, error)
   VisitDeclNodeStmt(expr *DeclNode) (T, error)
+  VisitBlockNodeStmt(expr *BlockNode) (T, error)
 }
 type ExprStmtNode struct {
   Expr Expr
@@ -30,6 +31,11 @@ type DeclNode struct {
 }
 func (DeclNode) isStmt() {}
 
+type BlockNode struct {
+  Stmts []Stmt
+}
+func (BlockNode) isStmt() {}
+
 func AcceptStmt[T any](expr Stmt, visitor StmtVisitor[T]) (T, error) {
   switch e := expr.(type) {
   case ExprStmtNode: return visitor.VisitExprStmtNodeStmt(&e)
@@ -38,6 +44,8 @@ func AcceptStmt[T any](expr Stmt, visitor StmtVisitor[T]) (T, error) {
   case *PrintNode: return visitor.VisitPrintNodeStmt(e)
   case DeclNode: return visitor.VisitDeclNodeStmt(&e)
   case *DeclNode: return visitor.VisitDeclNodeStmt(e)
+  case BlockNode: return visitor.VisitBlockNodeStmt(&e)
+  case *BlockNode: return visitor.VisitBlockNodeStmt(e)
   default: panic(fmt.Sprintf("visitor not implemented for %T", expr))
   }
 }

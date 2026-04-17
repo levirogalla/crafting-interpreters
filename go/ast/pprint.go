@@ -2,6 +2,8 @@
 
 package ast
 
+import "strings"
+
 type ASTPrinter struct{}
 
 func (p *ASTPrinter) Print(stmt Stmt) (string, error) {
@@ -27,6 +29,15 @@ func (p *ASTPrinter) VisitDeclNodeStmt(stmt *DeclNode) (string, error) {
   } else {
     return stmt.Ident.Name.Lexeme, nil
   }
+}
+
+func (p *ASTPrinter) VisitBlockNodeStmt(stmt *BlockNode) (string, error) {
+  var ret []string
+  for _, stmt := range stmt.Stmts {
+    val, _ := AcceptStmt(stmt, p)
+    ret = append(ret, val)
+  }
+  return strings.Join(ret, ",\n"), nil
 }
 
 // =================================================================================================

@@ -9,11 +9,13 @@ import (
 
 type Environ struct {
 	values map[string]m.Ltype
+	enclosing *Environ
 }
 
-func NewEnviron() *Environ {
+func NewEnviron(enclosing *Environ) *Environ {
 	return &Environ{
 		values: make(map[string]m.Ltype),
+		enclosing: enclosing,
 	}
 }
 
@@ -24,6 +26,9 @@ func (e *Environ) Define(name string, value m.Ltype) {
 func (e *Environ) Get(name m.Token) (m.Ltype, error) {
 	val, ok := e.values[name.Lexeme]
 	if !ok {
+		if e.enclosing != nil {
+			return e.enclosing.Get(name)
+		}
 		return nil, lerr.RuntimeError{
 			Token: name,
 			Message: fmt.Sprintf("undefined variable '%s'.", name.Lexeme),
@@ -37,6 +42,9 @@ func (e *Environ) Assign(name m.Token, value m.Ltype) error {
 	if ok {
 		e.values[name.Lexeme] = value
 		return nil
+	}
+	if e.enclosing != nil {
+		return e.enclosing.Assign(name, value)
 	}
 	return lerr.RuntimeError{
 		Token: name,
