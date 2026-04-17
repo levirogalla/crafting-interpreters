@@ -136,7 +136,20 @@ func (Lstring) isLType() {}
 type Lbool bool
 func (Lbool) isLType() {}
 
-
 type Ltype interface {
 	isLType()
+}
+
+func StringifyLType(ltype Ltype) string {
+	switch ltype.(type) {
+	case Lnum, *Lnum:
+		return "num"
+	case Lstring, *Lstring:
+		return "string"
+	case Lbool, *Lbool:
+		return "bool"
+	case nil:
+		return "nil"
+	default: panic("unsupporeted ltype")
+	}
 }

@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"crafting-interpreters/ast"
 	"crafting-interpreters/error"
 	"crafting-interpreters/interpreter"
 	"crafting-interpreters/parser"
@@ -61,11 +62,17 @@ func runPrompt() {
 }
 
 var interp = interpreter.NewInterp(*errReporter)
+var printer = ast.NewASTPringer()
 func run(i string) {
 	scanner := scanner.NewScanner(i, *errReporter)
 	ts := scanner.ScanTokens()
 	parser := parser.NewParser(ts)
 	stmts, err := parser.Parse()
+	for _, stmt := range stmts {
+		str, _ := printer.Print(stmt)
+		fmt.Println(str)
+		_ = str
+	}
 	_ = err
 	interp.Interpret(stmts)
 }

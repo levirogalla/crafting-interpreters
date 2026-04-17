@@ -26,7 +26,7 @@ func (r *Reporter) ParseError(t *models.Token, message *string) {
 }
 
 func (r *Reporter) RuntimeError(t *models.Token, message *string) {
-	fmt.Printf("%s %c[line \"%d\"]\n", *message, '\n', t.Line)
+	fmt.Printf("[line %d]: %s %c", t.Line, *message, '\n')
 	r.HadRuntimeErr = true
 }
 
@@ -51,4 +51,9 @@ type RuntimeError struct {
 
 func (r RuntimeError) Error() string {
 	return fmt.Sprintf("%s: %s", r.Message, r.Token)
+}
+
+type ParseError struct {}
+func (pErr ParseError) Error() string {
+	return "parse error"
 }

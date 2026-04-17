@@ -4,7 +4,6 @@ import (
 	"crafting-interpreters/ast"
 	"crafting-interpreters/environ"
 	lerr "crafting-interpreters/error"
-	"crafting-interpreters/models"
 	m "crafting-interpreters/models"
 	"fmt"
 	"reflect"
@@ -33,8 +32,8 @@ handleError:
 	i.errReporter.RuntimeError(&t, &m)
 }
 
-func (i *Interp) evaluate(expr ast.Expr) (models.Ltype, error) {
-	return ast.AcceptExpr[models.Ltype](expr, i)
+func (i *Interp) evaluate(expr ast.Expr) (m.Ltype, error) {
+	return ast.AcceptExpr[m.Ltype](expr, i)
 }
 
 func (i *Interp) execute(stmt ast.Stmt) error {
@@ -58,7 +57,7 @@ func (i *Interp) VisitPrintNodeStmt(stmt *ast.PrintNode) (int, error) {
 }
 
 func (i *Interp) VisitDeclNodeStmt(stmt *ast.DeclNode) (int, error) {
-	var value models.Ltype
+	var value m.Ltype
 	var err error
 	if stmt.Initializer != nil {
 		value, err = i.evaluate(stmt.Initializer)
@@ -70,21 +69,21 @@ func (i *Interp) VisitDeclNodeStmt(stmt *ast.DeclNode) (int, error) {
 // Expression methods
 // =================================================================================================
 
-func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (models.Ltype, error) {
+func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (m.Ltype, error) {
 	return i.environ.Get(*expr.Name)
 }
 
-func (*Interp) VisitLiteralNodeExpr(expr *ast.LiteralNode) (models.Ltype, error) {
+func (*Interp) VisitLiteralNodeExpr(expr *ast.LiteralNode) (m.Ltype, error) {
 	return expr.Value.Lit, nil
 }
 
-func (i *Interp) VisitGroupingNodeExpr(expr *ast.GroupingNode) (models.Ltype, error) {
+func (i *Interp) VisitGroupingNodeExpr(expr *ast.GroupingNode) (m.Ltype, error) {
 	return i.evaluate(expr.Expr)
 }
 
-func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (models.Ltype, error) {
+func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (m.Ltype, error) {
 	var zNum m.Lnum
-	var zStr string
+	var zStr m.Lstring
 	left, err := i.evaluate(expr.Left)
 	if err != nil {
 		return nil, err
@@ -137,25 +136,25 @@ func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (models.Ltype, error)
 		if err != nil {
 			return nil, err
 		}
-		return models.Lbool(l > r), nil
+		return m.Lbool(l > r), nil
 	case m.GTE:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return models.Lbool(l >= r), nil
+		return m.Lbool(l >= r), nil
 	case m.LT:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return models.Lbool(l < r), nil
+		return m.Lbool(l < r), nil
 	case m.LTE:
 		l, r, err := checkTypes[m.Lnum](expr.Op, left, right)
 		if err != nil {
 			return nil, err
 		}
-		return models.Lbool(l <= r), nil
+		return m.Lbool(l <= r), nil
 	case m.Eq:
 		return isEq(left, right), nil
 	case m.Neq:
@@ -165,7 +164,7 @@ func (i *Interp) VisitBinaryNodeExpr(expr *ast.BinaryNode) (models.Ltype, error)
 	}
 }
 
-func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (models.Ltype, error) {
+func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (m.Ltype, error) {
 	right, err := i.evaluate(expr.Right)
 	if err != nil {
 		return nil, err
@@ -190,19 +189,19 @@ func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (models.Ltype, error) {
 // Utils
 // =================================================================================================
 
-func (i *Interp) isTruthy(expr any) models.Lbool {
+func (i *Interp) isTruthy(expr any) m.Lbool {
 	if expr == nil {
-		return models.Lbool(false)
+		return m.Lbool(false)
 	}
 	switch e := expr.(type) {
 	case bool:
-		return models.Lbool(e)
+		return m.Lbool(e)
 	default:
-		return models.Lbool(true)
+		return m.Lbool(true)
 	}
 }
 
-func isEq(l any, r any) models.Lbool {
+func isEq(l any, r any) m.Lbool {
 	if l == nil && r == nil {
 		return true
 	} else if l == nil || r == nil {
@@ -219,15 +218,15 @@ func isEq(l any, r any) models.Lbool {
 	case []any:
 		switch r_ := r.(type) {
 		case []any:
-			return models.Lbool(slices.Equal(l_, r_))
+			return m.Lbool(slices.Equal(l_, r_))
 		}
 		return false
 	default:
-		return models.Lbool(reflect.DeepEqual(l, r))
+		return m.Lbool(reflect.DeepEqual(l, r))
 	}
 }
 
-func checkTypes[T any](op *m.Token, a, b any) (a_ T, b_ T, err error) {
+func checkTypes[T m.Ltype](op *m.Token, a, b m.Ltype) (a_ T, b_ T, err error) {
 	var ok bool
 	var zero T
 	a_, ok = a.(T)
@@ -241,7 +240,7 @@ func checkTypes[T any](op *m.Token, a, b any) (a_ T, b_ T, err error) {
 	return a_, b_, nil
 }
 
-func checkType[T any](op *m.Token, a any) (a_ T, err error) {
+func checkType[T m.Ltype](op *m.Token, a m.Ltype) (a_ T, err error) {
 	var ok bool
 	var zero T
 	a_, ok = a.(T)
@@ -253,14 +252,21 @@ func checkType[T any](op *m.Token, a any) (a_ T, err error) {
 
 
 
-func invalidOperandError(op *m.Token, found any, exp ...any) *lerr.RuntimeError {
+func invalidOperandError(op *m.Token, found m.Ltype, exp ...m.Ltype) lerr.RuntimeError {
 	var expectedTypes []string
 	for _, e := range exp {
-		expectedTypes = append(expectedTypes, fmt.Sprintf("%T", e))
+		expectedTypes = append(expectedTypes, m.StringifyLType(e))
 	}
-	return &lerr.RuntimeError{
+	var found_ string
+	if found == nil {
+		found_ = "nil"
+	} else {
+		found_ = fmt.Sprintf("'%v' of type '%s'", found, m.StringifyLType(found))
+	}
+
+	return lerr.RuntimeError{
 		Token:   *op,
-		Message: fmt.Sprintf("operand(s) must be of type %s, but found a %T", strings.Join(expectedTypes, ","), found),
+		Message: fmt.Sprintf("operand(s) must be of type '%s', but found %s.", strings.Join(expectedTypes, ", "), found_),
 	}
 }
 

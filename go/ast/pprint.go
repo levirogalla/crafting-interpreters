@@ -4,9 +4,33 @@ package ast
 
 type ASTPrinter struct{}
 
-func (p *ASTPrinter) Print(expr Expr) (string, error) {
-	return AcceptExpr(expr, p)
+func (p *ASTPrinter) Print(stmt Stmt) (string, error) {
+	return AcceptStmt(stmt, p)
 }
+
+// =================================================================================================
+// Statement Methods
+// =================================================================================================
+
+func (p *ASTPrinter) VisitExprStmtNodeStmt(stmt *ExprStmtNode) (string, error) {
+  return AcceptExpr(stmt.Expr, p)
+}
+
+func (p *ASTPrinter) VisitPrintNodeStmt(stmt *PrintNode) (string, error) {
+  return p.parenthesize("print", stmt.Expr), nil
+}
+
+func (p *ASTPrinter) VisitDeclNodeStmt(stmt *DeclNode) (string, error) {
+  if stmt.Initializer != nil {
+    return p.parenthesize(stmt.Ident.Name.Lexeme, stmt.Initializer), nil
+  } else {
+    return stmt.Ident.Name.Lexeme, nil
+  }
+}
+
+// =================================================================================================
+// Expression methods
+// =================================================================================================
 
 func (p *ASTPrinter) VisitBinaryNodeExpr(expr *BinaryNode) (string, error) {
 	return p.parenthesize(expr.Op.Lexeme, expr.Left, expr.Right), nil

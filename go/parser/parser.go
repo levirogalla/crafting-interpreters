@@ -18,7 +18,7 @@ func (p *Parser) Parse() ([]ast.Stmt, error) {
 	for (!p.done()) {
 		stmt, err := p.declaration()
 		if err != nil {
-			fmt.Printf("mesg: %v\n", err)
+			continue
 		}
 		stmts = append(stmts, stmt)
 	}
@@ -42,7 +42,7 @@ func (p *Parser) declaration() (ast.Stmt, error) {
 	return stmt, nil
 sync:
 	p.sync()
-	return nil, nil
+	return nil, err
 }
 
 func (p *Parser) varDeclaration() (ast.Stmt, error) {
@@ -79,7 +79,7 @@ func (p *Parser) statement() (ast.Stmt, error) {
 func (p *Parser) printStatement() (ast.Stmt, error) {
 	value, err := p.expression()
 	if err != nil { return nil, err }
-	p.consume(models.Semicol, "expected ';' after value.")
+	p.consume(models.Semicol, "expected ';' after value for print.")
 	return &ast.PrintNode{
 		Expr: value,
 	}, nil
@@ -88,7 +88,7 @@ func (p *Parser) printStatement() (ast.Stmt, error) {
 func (p *Parser) exprStatement() (ast.Stmt, error) {
 	value, err := p.expression()
 	if err != nil { return nil, err }
-	p.consume(models.Semicol, "expected ';' after value.")
+	p.consume(models.Semicol, "expected ';' after value for expression.")
 	return &ast.ExprStmtNode{
 		Expr: value,
 	}, nil
@@ -183,7 +183,7 @@ func (p *Parser) primary() (ast.Expr, error) {
 		}, nil
 	}
 
-	return nil, p.error(tk, fmt.Sprintf("expected expression %s", tk))
+	return nil, p.error(tk, fmt.Sprintf("expected expression, found '%s'.", tk.Lexeme))
 }
 
 func (p *Parser) sync() {
@@ -200,17 +200,6 @@ func (p *Parser) sync() {
 		p.advance()
 	}
 }
-      // switch (peek().type) {
-      //   case CLASS:
-      //   case FUN:
-      //   case VAR:
-      //   case FOR:
-      //   case IF:
-      //   case WHILE:
-      //   case PRINT:
-      //   case RETURN:
-      //     return;
-      // }
 
 // =================================================================================================
 // utils
@@ -255,9 +244,9 @@ func (p *Parser) consume(tt models.TokenType, message string) (*models.Token, er
 	return nil, p.error(&t, message)
 }
 
-func (p *Parser) error(t *models.Token, message string) *ParseError {
+func (p *Parser) error(t *models.Token, message string) *lerr.ParseError {
 	p.errReporter.ParseError(t, &message)
-	return &ParseError{}
+	return &lerr.ParseError{}
 }
 
 func NewParser(ts *[]models.Token) *Parser {
@@ -267,7 +256,3 @@ func NewParser(ts *[]models.Token) *Parser {
 	}
 }
 
-type ParseError struct {}
-func (pErr ParseError) Error() string {
-	return "parse error"
-}
