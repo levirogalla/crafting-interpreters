@@ -22,7 +22,8 @@ func (p *ASTPrinter) VisitPrintNodeStmt(stmt *PrintNode) (string, error) {
 
 func (p *ASTPrinter) VisitDeclNodeStmt(stmt *DeclNode) (string, error) {
   if stmt.Initializer != nil {
-    return p.parenthesize(stmt.Ident.Name.Lexeme, stmt.Initializer), nil
+    val, _ := AcceptExpr(stmt.Ident, p)
+    return p.parenthesize(val, stmt.Initializer), nil
   } else {
     return stmt.Ident.Name.Lexeme, nil
   }
@@ -51,6 +52,11 @@ func (p *ASTPrinter) VisitUnaryNodeExpr(expr *UnaryNode) (string, error) {
 
 func (p *ASTPrinter) VisitIdentNodeExpr(expr *IdentNode) (string, error) {
   return expr.Name.Lexeme, nil
+}
+
+func (p *ASTPrinter) VisitAssignNodeExpr(expr *AssignNode) (string, error) {
+  val, _ := AcceptExpr(expr.Ident, p)
+  return p.parenthesize(val, expr.Value), nil
 }
 
 func (p *ASTPrinter) parenthesize(name string, exprs ...Expr) string {

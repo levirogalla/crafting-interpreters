@@ -11,12 +11,19 @@ type Expr interface {
 	isExpr()
 }	
 type ExprVisitor[T any] interface {
+  VisitAssignNodeExpr(expr *AssignNode) (T, error)
   VisitBinaryNodeExpr(expr *BinaryNode) (T, error)
   VisitGroupingNodeExpr(expr *GroupingNode) (T, error)
   VisitLiteralNodeExpr(expr *LiteralNode) (T, error)
   VisitUnaryNodeExpr(expr *UnaryNode) (T, error)
   VisitIdentNodeExpr(expr *IdentNode) (T, error)
 }
+type AssignNode struct {
+  Ident *IdentNode
+  Value Expr
+}
+func (AssignNode) isExpr() {}
+
 type BinaryNode struct {
   Left Expr
   Op *models.Token
@@ -47,6 +54,8 @@ func (IdentNode) isExpr() {}
 
 func AcceptExpr[T any](expr Expr, visitor ExprVisitor[T]) (T, error) {
   switch e := expr.(type) {
+  case AssignNode: return visitor.VisitAssignNodeExpr(&e)
+  case *AssignNode: return visitor.VisitAssignNodeExpr(e)
   case BinaryNode: return visitor.VisitBinaryNodeExpr(&e)
   case *BinaryNode: return visitor.VisitBinaryNodeExpr(e)
   case GroupingNode: return visitor.VisitGroupingNodeExpr(&e)

@@ -52,7 +52,7 @@ func (p *Parser) varDeclaration() (ast.Stmt, error) {
 	}
 
 	var initializer ast.Expr
-	if p.match(models.Asign) {
+	if p.match(models.Assign) {
 		i, err := p.expression()
 		if err != nil {
 			return nil, err
@@ -95,7 +95,30 @@ func (p *Parser) exprStatement() (ast.Stmt, error) {
 }
 
 func (p *Parser) expression() (ast.Expr, error) {
-	return p.equality()
+	return p.assignent()
+}
+
+func (p *Parser) assignent() (ast.Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.match(models.Assign) {
+		eq := p.previous();
+		rval, _ := p.assignent();
+
+		switch e := expr.(type) {
+		case *ast.IdentNode:
+			return &ast.AssignNode{
+				Ident: e,
+				Value: rval,
+			}, nil
+		}
+
+		p.error(eq, fmt.Sprintf("invalid assignment target. %T", expr))
+	}
+	return expr, nil
 }
 
 func (p *Parser) equality() (ast.Expr, error) {

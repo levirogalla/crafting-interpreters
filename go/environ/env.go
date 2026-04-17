@@ -31,3 +31,15 @@ func (e *Environ) Get(name m.Token) (m.Ltype, error) {
 	}
 	return val, nil
 }
+
+func (e *Environ) Assign(name m.Token, value m.Ltype) error {
+	_, ok := e.values[name.Lexeme]
+	if ok {
+		e.values[name.Lexeme] = value
+		return nil
+	}
+	return lerr.RuntimeError{
+		Token: name,
+		Message: fmt.Sprintf("undefined variable '%s'.", name.Lexeme),
+	}
+}

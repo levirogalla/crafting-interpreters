@@ -74,7 +74,7 @@ func (s *Scanner) scanToken() {
 		if s.match('=') {
 			s.addSimpleToken(models.Eq)
 		} else {
-			s.addSimpleToken(models.Asign)
+			s.addSimpleToken(models.Assign)
 		}
 
 	case '<':

@@ -76,7 +76,7 @@ const (
 	// one or two char tokens
 	Bang
 	Neq
-	Asign
+	Assign
 	Eq
 	GT
 	LT

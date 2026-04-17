@@ -183,7 +183,14 @@ func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (m.Ltype, error) {
 	}
 }
 
-// func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (any, error) {}
+func (i *Interp) VisitAssignNodeExpr(expr *ast.AssignNode) (m.Ltype, error) {
+	val, err := i.evaluate(expr.Value);
+	if err != nil {
+		return nil, err
+	}
+	err = i.environ.Assign(*expr.Ident.Name, val)
+	return val, err
+}
 
 // =================================================================================================
 // Utils

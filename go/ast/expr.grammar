@@ -1,3 +1,4 @@
+AssignNode   : *IdentNode Ident, Expr Value
 BinaryNode   : Expr Left, *models.Token Op, Expr Right
 GroupingNode : Expr Expr
 LiteralNode  : *models.Token Value
