@@ -5,12 +5,14 @@ import (
 	lerr "crafting-interpreters/error"
 	"crafting-interpreters/models"
 	"fmt"
+	"log"
 )
 
 type Parser struct {
 	tokens []models.Token
 	current int
 	errReporter lerr.Reporter
+	logger *log.Logger
 }
 
 func (p *Parser) Parse() ([]ast.Stmt, error) {
@@ -68,8 +70,10 @@ func (p *Parser) varDeclaration() (ast.Stmt, error) {
 	}, nil
 }
 
-
 func (p *Parser) statement() (ast.Stmt, error) {
+	if p.match(models.If) {
+		return p.ifStatement()
+	}
 	if p.match(models.Print) { 
 		return p.printStatement()
 	}
@@ -83,6 +87,35 @@ func (p *Parser) statement() (ast.Stmt, error) {
 		}, nil
 	}
 	return p.exprStatement()
+}
+
+func (p *Parser) ifStatement() (ast.Stmt, error) {
+	p.consume(models.LParen, "expected '(' after 'if'")
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(models.RParen, "expected ')' conditions statement")
+
+	stmt, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	var elseStmt ast.Stmt
+	if p.match(models.Else) {
+		el, err := p.statement()
+		if err != nil {
+			return nil, err
+		}
+		elseStmt = el
+	}
+
+	return &ast.IfNode{
+		Cond: expr,
+		Then: stmt,
+		Else: elseStmt,
+	}, nil
 }
 
 func (p *Parser) block() ([]ast.Stmt, error) {
@@ -121,7 +154,7 @@ func (p *Parser) expression() (ast.Expr, error) {
 }
 
 func (p *Parser) assignent() (ast.Expr, error) {
-	expr, err := p.equality()
+	expr, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -143,14 +176,66 @@ func (p *Parser) assignent() (ast.Expr, error) {
 	return expr, nil
 }
 
+func (p *Parser) or() (ast.Expr, error) {
+		expr, err := p.and()
+		if err != nil {
+		p.logger.Printf("failed to parse left of or")
+			return nil, err
+		}
+
+		for p.match(models.Or) {
+			op := p.previous()
+			right, err := p.and()
+			if err != nil {
+			p.logger.Printf("failed to parse rigth of or")
+				return nil, err
+			}
+			expr = &ast.LogicNode{
+				Left: expr,
+				Op: op,
+				Right: right,
+			}
+		}
+
+		return expr, nil 
+}
+
+func (p *Parser) and() (ast.Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		p.logger.Printf("failed to parse left of and")
+		return nil, err
+	}
+
+	for p.match(models.And) {
+		op := p.previous()
+		right, err := p.equality()
+		if err != nil {
+			p.logger.Printf("failed to parse right of and")
+			return nil, err
+		}
+		expr = &ast.LogicNode{
+			Left: expr,
+			Op: op,
+			Right: right,
+		}
+	}
+
+	return expr, nil
+}
+
 func (p *Parser) equality() (ast.Expr, error) {
 	expr, err := p.comparison()
-	if err != nil { return nil, err }
+	if err != nil { 
+		p.logger.Printf("failed to parse left of eqaulity")
+		return nil, err }
 
 	for (p.match(models.Neq, models.Eq)) {
 		op := p.previous()
 		right, err := p.comparison()
-		if err != nil { return nil, err }
+		if err != nil { 
+			p.logger.Printf("failed to parse right of eqaulity")
+		return nil, err }
 		expr = &ast.BinaryNode{Left: expr, Op: op, Right: right}
 	}
 
@@ -159,12 +244,17 @@ func (p *Parser) equality() (ast.Expr, error) {
 
 func (p *Parser) comparison() (ast.Expr, error) {
 	expr, err := p.term()
-	if err != nil { return nil, err }
+	if err != nil { 
+			p.logger.Printf("failed to parse left of comparison")
+		return nil, err 
+	}
 
 	for p.match(models.GT, models.GTE, models.LT, models.LTE) {
 		op := p.previous()
 		right, err := p.term()
-		if err != nil { return nil, err }
+		if err != nil { 
+			p.logger.Printf("failed to parse rigth of comparison")
+			return nil, err }
 		expr = &ast.BinaryNode{Left: expr, Op: op, Right: right}
 	}
 
@@ -173,12 +263,14 @@ func (p *Parser) comparison() (ast.Expr, error) {
 
 func (p *Parser) term() (ast.Expr, error) {
 	expr, err := p.factor()
-	if err != nil { return nil, err }
+	if err != nil { 
+		return nil, err }
 
 	for p.match(models.Minus, models.Plus) {
 		op := p.previous()
 		right, err := p.factor()
-		if err != nil { return nil, err }
+		if err != nil { 
+			return nil, err }
 		expr = &ast.BinaryNode{Left: expr, Op: op, Right: right}
 	}
 
@@ -294,10 +386,11 @@ func (p *Parser) error(t *models.Token, message string) *lerr.ParseError {
 	return &lerr.ParseError{}
 }
 
-func NewParser(ts *[]models.Token) *Parser {
+func NewParser(ts *[]models.Token, logger *log.Logger) *Parser {
 	return &Parser{
 		tokens: *ts,
 		current: 0,
+		logger: logger,
 	}
 }
 

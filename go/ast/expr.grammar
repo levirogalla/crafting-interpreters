@@ -4,3 +4,4 @@ GroupingNode : Expr Expr
 LiteralNode  : *models.Token Value
 UnaryNode    : *models.Token Op, Expr Right
 IdentNode    : *models.Token Name
+LogicNode    : Expr Left, *models.Token Op, Expr Right

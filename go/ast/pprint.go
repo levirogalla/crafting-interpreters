@@ -6,8 +6,11 @@ import "strings"
 
 type ASTPrinter struct{}
 
-func (p *ASTPrinter) Print(stmt Stmt) (string, error) {
-	return AcceptStmt(stmt, p)
+func (p *ASTPrinter) PrintExpr(expr Expr) (string, error) {
+  return AcceptExpr[string](expr, p)
+}
+func (p *ASTPrinter) PrintStmt(stmt Stmt) (string, error) {
+  return AcceptStmt[string](stmt, p)
 }
 
 // =================================================================================================
@@ -19,13 +22,13 @@ func (p *ASTPrinter) VisitExprStmtNodeStmt(stmt *ExprStmtNode) (string, error) {
 }
 
 func (p *ASTPrinter) VisitPrintNodeStmt(stmt *PrintNode) (string, error) {
-  return p.parenthesize("print", stmt.Expr), nil
+  return p.parenthesize("print", ExprStmtNode{stmt.Expr}), nil
 }
 
 func (p *ASTPrinter) VisitDeclNodeStmt(stmt *DeclNode) (string, error) {
   if stmt.Initializer != nil {
     val, _ := AcceptExpr(stmt.Ident, p)
-    return p.parenthesize(val, stmt.Initializer), nil
+    return p.parenthesize(val, ExprStmtNode{stmt.Initializer}), nil
   } else {
     return stmt.Ident.Name.Lexeme, nil
   }
@@ -40,16 +43,28 @@ func (p *ASTPrinter) VisitBlockNodeStmt(stmt *BlockNode) (string, error) {
   return strings.Join(ret, ",\n"), nil
 }
 
+func (p *ASTPrinter) VisitIfNodeStmt(stmt *IfNode) (string, error) {
+  if stmt.Else == nil {
+    return p.parenthesize("if", ExprStmtNode{stmt.Cond}, stmt.Then), nil
+  } else {
+    return p.parenthesize("if else", ExprStmtNode{stmt.Cond}, stmt.Then, stmt.Else), nil
+  }
+}
+
 // =================================================================================================
 // Expression methods
 // =================================================================================================
 
+func (p *ASTPrinter) VisitLogicNodeExpr(expr *LogicNode) (string, error) {
+  return p.parenthesize(expr.Op.Lexeme, ExprStmtNode{expr.Left}, ExprStmtNode{expr.Right}), nil
+}
+
 func (p *ASTPrinter) VisitBinaryNodeExpr(expr *BinaryNode) (string, error) {
-	return p.parenthesize(expr.Op.Lexeme, expr.Left, expr.Right), nil
+	return p.parenthesize(expr.Op.Lexeme, ExprStmtNode{expr.Left}, ExprStmtNode{expr.Right}), nil
 }
 
 func (p *ASTPrinter) VisitGroupingNodeExpr(expr *GroupingNode) (string, error) {
-	return p.parenthesize("group", expr.Expr), nil
+	return p.parenthesize("group", ExprStmtNode{expr.Expr}), nil
 }
 
 func (p *ASTPrinter) VisitLiteralNodeExpr(expr *LiteralNode) (string, error) {
@@ -58,7 +73,7 @@ func (p *ASTPrinter) VisitLiteralNodeExpr(expr *LiteralNode) (string, error) {
 }
 
 func (p *ASTPrinter) VisitUnaryNodeExpr(expr *UnaryNode) (string, error) {
-	return p.parenthesize(expr.Op.Lexeme, expr.Right), nil;
+	return p.parenthesize(expr.Op.Lexeme, ExprStmtNode{expr.Right}), nil;
 }
 
 func (p *ASTPrinter) VisitIdentNodeExpr(expr *IdentNode) (string, error) {
@@ -67,17 +82,17 @@ func (p *ASTPrinter) VisitIdentNodeExpr(expr *IdentNode) (string, error) {
 
 func (p *ASTPrinter) VisitAssignNodeExpr(expr *AssignNode) (string, error) {
   val, _ := AcceptExpr(expr.Ident, p)
-  return p.parenthesize(val, expr.Value), nil
+  return p.parenthesize(val, ExprStmtNode{expr.Value}), nil
 }
 
-func (p *ASTPrinter) parenthesize(name string, exprs ...Expr) string {
+func (p *ASTPrinter) parenthesize(name string, stmts ...Stmt) string {
     // StringBuilder builder = new StringBuilder();
 		builder := ""
 
     builder += "(" + name;
-    for _, expr := range exprs {
+    for _, expr := range stmts {
       builder += " "
-      new, _ := AcceptExpr(expr, p)
+      new, _ := AcceptStmt[string](expr, p)
       builder += new
     }
     builder += ")"

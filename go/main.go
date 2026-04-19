@@ -10,6 +10,7 @@ import (
 	"crafting-interpreters/parser"
 	"crafting-interpreters/scanner"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -63,13 +64,14 @@ func runPrompt() {
 
 var interp = interpreter.NewInterp(*errReporter)
 var printer = ast.NewASTPringer()
+var logger = log.New(os.Stderr, "[log]", 0)
 func run(i string) {
 	scanner := scanner.NewScanner(i, *errReporter)
 	ts := scanner.ScanTokens()
-	parser := parser.NewParser(ts)
+	parser := parser.NewParser(ts, logger)
 	stmts, err := parser.Parse()
 	for _, stmt := range stmts {
-		str, _ := printer.Print(stmt)
+		str, _ := printer.PrintStmt(stmt)
 		fmt.Println(str)
 		_ = str
 	}

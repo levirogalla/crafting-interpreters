@@ -84,9 +84,33 @@ func (i *Interp) VisitBlockNodeStmt(stmt *ast.BlockNode) (int, error) {
 	err := i.execBlock(stmt.Stmts, environ.NewEnviron(i.environ));
 	return 0, err
 }
+
+func (i *Interp) VisitIfNodeStmt(stmt *ast.IfNode) (int, error) {
+	if isTruthy(stmt.Cond) {
+		return 0,i.execute(stmt.Then)
+	} else {
+		return 0,i.execute(stmt.Else)
+	}
+}
+
 // =================================================================================================
 // Expression methods
 // =================================================================================================
+
+func (i *Interp) VisitLogicNodeExpr(expr *ast.LogicNode) (m.Ltype, error) {
+	left, err := i.evaluate(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+
+	if expr.Op.TType == m.Or {
+		if isTruthy(left) { return left, nil } 	
+	} else {
+		if !isTruthy(left) { return left, nil }
+	}
+
+	return i.evaluate(expr.Right)
+}
 
 func (i *Interp) VisitIdentNodeExpr(expr *ast.IdentNode) (m.Ltype, error) {
 	return i.environ.Get(*expr.Name)
@@ -190,7 +214,7 @@ func (i *Interp) VisitUnaryNodeExpr(expr *ast.UnaryNode) (m.Ltype, error) {
 	}
 	switch expr.Op.TType {
 	case m.Bang:
-		return !i.isTruthy(right), nil
+		return !isTruthy(right), nil
 	case m.Minus:
 		r, err := checkType[m.Lnum](expr.Op, right)
 		if err != nil {
@@ -215,7 +239,7 @@ func (i *Interp) VisitAssignNodeExpr(expr *ast.AssignNode) (m.Ltype, error) {
 // Utils
 // =================================================================================================
 
-func (i *Interp) isTruthy(expr any) m.Lbool {
+func isTruthy(expr any) m.Lbool {
 	if expr == nil {
 		return m.Lbool(false)
 	}
